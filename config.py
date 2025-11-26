@@ -31,7 +31,9 @@ LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
 LOG_FILE = BASE_DIR / 'logs' / 'ml_service.log'
 
 # CORS
-ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:5001,http://localhost:3000').split(',')
+# ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:5001,http://localhost:3000').split(',')
+# In config.py
+ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:5001,https://group4.kokax.com').split(',')
 
 # Health check
 SERVICE_NAME = 'Mouse ML Service'

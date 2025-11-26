@@ -8,6 +8,7 @@ from flask_cors import CORS
 import os
 import time
 from datetime import datetime
+from config import ALLOWED_ORIGINS
 
 # from predictor import predictor
 from predictor import get_predictor
@@ -19,7 +20,9 @@ predictor = get_predictor()
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+# CORS(app)  # Enable CORS for all routes
+CORS(app, origins=ALLOWED_ORIGINS)
+
 
 # Global metrics
 metrics = {
