@@ -9,7 +9,8 @@ from pathlib import Path
 BASE_DIR = Path(__file__).parent
 
 # Model configuration
-MODEL_PATH = BASE_DIR / 'models' / 'mouse_bot_xgboost.pkl'
+# MODEL_PATH = BASE_DIR / 'models' / 'mouse_bot_xgboost.pkl'
+MODEL_PATH = BASE_DIR / 'models' / 'mouse_bot_random_forest.pkl'
 MODEL_VERSION = '1.0.0'
 
 # API configuration
