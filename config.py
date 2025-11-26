@@ -24,8 +24,8 @@ MAX_EVENTS = int(os.getenv('MAX_EVENTS', 10000))  # Max events per trajectory
 REQUEST_TIMEOUT = int(os.getenv('REQUEST_TIMEOUT', 30))  # seconds
 
 # Thresholds
-BOT_THRESHOLD = float(os.getenv('BOT_THRESHOLD', 0.3))  # < 30% = bot
-HUMAN_THRESHOLD = float(os.getenv('HUMAN_THRESHOLD', 0.7))  # > 70% = human
+BOT_THRESHOLD = float(os.getenv('BOT_THRESHOLD', 0.25))  # < 30% = bot
+HUMAN_THRESHOLD = float(os.getenv('HUMAN_THRESHOLD', 0.50))  # > 70% = human
 
 # Logging
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
