@@ -9,8 +9,11 @@ from typing import Dict, List, Any, Optional
 
 from feature_extractor import MouseFeatureExtractor
 from model_loader import model_loader
+# We import these, but we will also print them to verify values
 from config import BOT_THRESHOLD, HUMAN_THRESHOLD
 
+# Configure logging to ensure it shows up in Docker/Console logs
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -23,25 +26,25 @@ class MouseBotPredictor:
         self.explainer = model_loader.get_explainer()
         
         logger.info("🎯 Predictor initialized")
+        logger.info(f"⚙️  Active Configuration:")
+        logger.info(f"   - HUMAN_THRESHOLD: {HUMAN_THRESHOLD}")
+        logger.info(f"   - BOT_THRESHOLD:   {BOT_THRESHOLD}")
     
     def predict(self, events: List[Dict], explain: bool = False) -> Dict[str, Any]:
         """
         Predict if trajectory is human or bot
-        
-        Args:
-            events: List of mouse events [{x, y, timestamp, type}, ...]
-            explain: Whether to include SHAP explanations
-        
-        Returns:
-            Prediction result with confidence and optional explanation
         """
         start_time = time.time()
         
         try:
+            # Log incoming request size
+            print(f"\n🔍 [PREDICT] Received {len(events)} events")
+
             # Extract features
             features = self.feature_extractor.extract_features(events)
             
             if not np.any(features):
+                logger.warning("⚠️ Empty features extracted")
                 return {
                     'error': 'Invalid trajectory - no valid features extracted',
                     'prediction': 'unknown',
@@ -53,23 +56,30 @@ class MouseBotPredictor:
             
             # Make prediction
             prediction_proba = self.model.predict_proba(features_scaled)[0]
-            prediction_class = self.model.predict(features_scaled)[0]
+            # prediction_class = self.model.predict(features_scaled)[0] # Unused directly
             
             # Get confidence and humanity score
-            bot_probability = prediction_proba[0]
-            human_probability = prediction_proba[1]
+            bot_probability = float(prediction_proba[0])
+            human_probability = float(prediction_proba[1])
             humanity_score = int(human_probability * 100)
+            
+            # --- DEBUG LOGS FOR LOGIC ---
+            print(f"📊 [MATH] Human Prob: {human_probability:.4f} | Bot Prob: {bot_probability:.4f}")
+            print(f"⚖️  [THRESHOLDS] Human > {HUMAN_THRESHOLD} | Bot < {BOT_THRESHOLD}")
             
             # Determine prediction label
             if human_probability > HUMAN_THRESHOLD:
                 prediction = 'human'
                 confidence = human_probability
+                print(f"✅ [DECISION] Classified as HUMAN ({human_probability:.4f} > {HUMAN_THRESHOLD})")
             elif human_probability < BOT_THRESHOLD:
                 prediction = 'bot'
                 confidence = bot_probability
+                print(f"🤖 [DECISION] Classified as BOT ({human_probability:.4f} < {BOT_THRESHOLD})")
             else:
                 prediction = 'uncertain'
                 confidence = max(human_probability, bot_probability)
+                print(f"❓ [DECISION] Classified as UNCERTAIN (Score {human_probability:.4f} is between thresholds)")
             
             result = {
                 'prediction': prediction,
@@ -84,6 +94,7 @@ class MouseBotPredictor:
             
             # Add explanation if requested
             if explain and self.explainer is not None:
+                print("🧠 [SHAP] Generating explanation...")
                 explanation = self._generate_explanation(
                     features_scaled, 
                     features,
@@ -91,8 +102,9 @@ class MouseBotPredictor:
                     human_probability
                 )
                 result['explanation'] = explanation
+                print("🧠 [SHAP] Explanation generated")
             
-            logger.info(f"✅ Prediction: {prediction} ({humanity_score}/100) in {result['processingTimeMs']}ms")
+            logger.info(f"🏁 Final Result: {prediction} ({humanity_score}/100) in {result['processingTimeMs']}ms")
             
             return result
         
@@ -119,19 +131,31 @@ class MouseBotPredictor:
             # For binary classification, take the human class SHAP values
             if isinstance(shap_values, list):
                 shap_values = shap_values[1]  # Human class
-            
+            elif hasattr(shap_values, 'values'): 
+                # Newer SHAP versions might return an Explanation object
+                if len(shap_values.values.shape) == 3:
+                     shap_values = shap_values.values[:,:,1]
+                else:
+                     shap_values = shap_values.values
+
+            # Handle different SHAP return shapes (sometimes it's (1, features), sometimes just (features,))
+            if len(shap_values.shape) > 1:
+                sv = shap_values[0]
+            else:
+                sv = shap_values
+
             # Get feature names
             feature_names = self.feature_extractor.feature_names
             
             # Get top contributing features
-            shap_abs = np.abs(shap_values[0])
+            shap_abs = np.abs(sv)
             top_indices = np.argsort(shap_abs)[::-1][:5]  # Top 5
             
             reasons = []
             for idx in top_indices:
                 feature_name = feature_names[idx]
                 feature_value = features_raw[idx]
-                shap_value = shap_values[0][idx]
+                shap_value = sv[idx]
                 impact_pct = int(abs(shap_value) * 100)
                 
                 # Determine if this pushes towards bot or human

@@ -25,7 +25,7 @@ REQUEST_TIMEOUT = int(os.getenv('REQUEST_TIMEOUT', 30))  # seconds
 
 # Thresholds
 BOT_THRESHOLD = float(os.getenv('BOT_THRESHOLD', 0.25))  # < 30% = bot
-HUMAN_THRESHOLD = float(os.getenv('HUMAN_THRESHOLD', 0.50))  # > 70% = human
+HUMAN_THRESHOLD = float(os.getenv('HUMAN_THRESHOLD', 0.5))  # > 50% = human
 
 # Logging
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
